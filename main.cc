@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "lib/log/LogManager.h"
+#include "test/SerialTest.h"
 
 using lib::log::Logger_ptr;
 using lib::log::LogManager;
@@ -126,6 +127,17 @@ class Connection
 };
 
 int main(int argc, char *argv[])
+{
+#ifdef ACTIVE
+	test::basicSerialA();
+#else
+	test::basicSerialB();
+#endif
+
+	return 0;
+}
+
+int o_main(int argc, char *argv[])
 {
 #ifdef ACTIVE
 	static const bool active = true;
