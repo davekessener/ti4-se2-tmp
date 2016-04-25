@@ -52,6 +52,9 @@ class Connection
 			ts.c_cflag &= ~CRTSCTS;
 			ts.c_oflag &= ~OPOST;
 
+			ts.c_oflag &= ~(ONLCR | OCRNL);
+			ts.c_iflag &= ~(INLCR | ICRNL);
+
 			if(tcsetattr(f_, TCSANOW, &ts) < 0) throw std::string("tcsetattr");
 		}
 
