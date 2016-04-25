@@ -63,6 +63,8 @@ class Connection
 
 				log->MXT_LOG("wrote %i bytes", r);
 			}
+
+			log->MXT_LOG("TOTAL of %u bytes written", t);
 		}
 
 		void recv(void *pp, size_t n)
@@ -81,6 +83,8 @@ class Connection
 
 				log->MXT_LOG("read %i bytes", r);
 			}
+
+			log->MXT_LOG("TOTAL of %u bytes read", t);
 		}
 
 		void sendS(const std::string& s)
