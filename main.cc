@@ -27,21 +27,21 @@ class Connection
 	public:
 		Connection(const std::string& d)
 		{
-			if((f_ = open(d.c_str(), O_RDWR)) < 0)
+			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY | O_NDELAY)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
 
 			struct termios ts;
-			tcflush(f_, TCIOFLUSH);
-			tcgetattr(f_, &ts);
-			cfsetispeed(&ts, B19200);
-			cfsetospeed(&ts, B19200);
+			if(tcflush(f_, TCIOFLUSH) < 0) throw std::string("tcflush");
+			if(tcgetattr(f_, &ts) < 0) throw std::string("tcgetattr");
+			if(cfsetispeed(&ts, B19200) < 0) throw std::string("cfsetispeed");
+			if(cfsetospeed(&ts, B19200) < 0) throw std::string("cfsetospeed");
 			ts.c_cflag &= ~CSIZE;
 			ts.c_cflag &= ~CSTOPB;
 			ts.c_cflag &= ~PARENB;
 			ts.c_cflag |= CS8;
 			ts.c_cflag |= CREAD;
 			ts.c_cflag |= CLOCAL;
-			tcsetattr(f_, TCSANOW, &ts);
+			if(tcsetattr(f_, TCSANOW, &ts) < 0) throw std::string("tcsetattr");
 		}
 
 		~Connection( )
