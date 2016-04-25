@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Log of serial test</title>
+		<script>
+			function initRefresh()
+			{
+				setTimeout(doRefresh, 1000);
+			}
+			function doRefresh()
+			{
+				window.location.reload(true);
+			}
+		</script>
+	</head>
+
+	<body onload="initRefresh()">
+		<table style="width:100%;">
+			<tr>
+				<td style="width:50%;">
+					<iframe src="logA.txt" style="width:100%;"></iframe>
+				</td>
+				<td style="width:50%;">
+					<iframe src="logB.txt" style="width:100%;"></iframe>
+				</td>
+			</tr>
+		<table>
+	</body>
+</html>
+
