@@ -8,7 +8,6 @@
 #include <string.h>
 
 #include "lib/log/LogManager.h"
-#include "test/SerialTest.h"
 
 using lib::log::Logger_ptr;
 using lib::log::LogManager;
@@ -62,6 +61,12 @@ class Connection
 			{
 				if((r = write(f_, p + t, n - t)) == -1)
 					throw std::string("failed send");
+
+				for(int i = 0 ; i < r ; ++i)
+				{
+					log->MXT_LOG("wrote 0x%02x", (int)p[t+i]);
+				}
+
 				t += r;
 
 				log->MXT_LOG("wrote %i bytes", r);
@@ -84,6 +89,12 @@ class Connection
 			{
 				if((r = read(f_, p + t, n - t)) == -1)
 					throw std::string("failed recv");
+
+				for(int i = 0 ; i < r ; ++i)
+				{
+					log->MXT_LOG("read 0x%02x", (int)p[t+i]);
+				}
+
 				t += r;
 
 				log->MXT_LOG("read %i bytes", r);
@@ -127,17 +138,6 @@ class Connection
 };
 
 int main(int argc, char *argv[])
-{
-#ifdef ACTIVE
-	test::basicSerialA();
-#else
-	test::basicSerialB();
-#endif
-
-	return 0;
-}
-
-int o_main(int argc, char *argv[])
 {
 #ifdef ACTIVE
 	static const bool active = true;
