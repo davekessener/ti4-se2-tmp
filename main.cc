@@ -130,7 +130,7 @@ class Connection
 			log_->MXT_LOG("TOTAL of %u bytes written", t);
 		}
 
-		void recv(void *pp, size_t n)
+		bool try_recv(void *pp, size_t n)
 		{
 			size_t t = 0;
 			int r = 0;
@@ -141,6 +141,8 @@ class Connection
 			while(t < n)
 			{
 				r = nb_read(f_, p + t, n - t);
+
+				if(!r && !t) return false;
 
 				for(int i = 0 ; i < r ; ++i)
 				{
@@ -153,42 +155,26 @@ class Connection
 			}
 
 			log_->MXT_LOG("TOTAL of %u bytes read", t);
+
+			return true;
 		}
 
-		void sendS(const std::string& s)
+		void recv(void *pp, size_t n)
 		{
-			uint16_t l = s.length();
-
-			send(&l, sizeof(l));
-			send(s.c_str(), l);
-
-			log_->MXT_LOG("wrote string of size %u", (unsigned) l);
-		}
-
-		std::string recvS(void)
-		{
-			uint16_t l;
-			char *buf;
-			std::string s;
-
-			recv(&l, sizeof(l));
-			log_->MXT_LOG("will read a string of size %u", (unsigned) l);
-			buf = new char[l + 1];
-			recv(buf, l);
-			buf[l] = '\0';
-
-			s = buf;
-			delete[] buf;
-
-			log_->MXT_LOG("read string of size %u", (unsigned) l);
-
-			return s;
+			while(!try_recv(pp, n));
 		}
 
 	private:
 		int f_;
 		Logger_ptr log_;
 };
+
+// # ===========================================================================
+
+void sendS(Connection&, const std::string&);
+std::string recvS(Connection&);
+
+// # ===========================================================================
 
 int main(int argc, char *argv[])
 {
@@ -208,14 +194,14 @@ int main(int argc, char *argv[])
 
 		if(active)
 		{
-			c.sendS("Hello, World!");
+			sendS(c, "Hello, World!");
 		}
 
-		std::string s = c.recvS();
+		std::string s = recvS(c);
 
 		if(!active)
 		{
-			c.sendS(s);
+			sendS(c, s);
 		}
 
 		log->MXT_LOG("received string \"%s\"", s.c_str());
@@ -226,5 +212,32 @@ int main(int argc, char *argv[])
 	}
 
 	return 0;
+}
+
+// # ===========================================================================
+
+void sendS(Connection& c, const std::string& s)
+{
+	uint16_t l = s.length();
+
+	c.send(&l, sizeof(l));
+	c.send(s.c_str(), l);
+}
+
+std::string recvS(Connection& c)
+{
+	uint16_t l;
+	char *buf;
+	std::string s;
+
+	c.recv(&l, sizeof(l));
+	buf = new char[l + 1];
+	c.recv(buf, l);
+	buf[l] = '\0';
+
+	s = buf;
+	delete[] buf;
+
+	return s;
 }
 
