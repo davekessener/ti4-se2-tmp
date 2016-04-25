@@ -1,5 +1,5 @@
 #!/bin/bash
 
 git pull
-./make.sh -DACTIVE || exit 1
+make all FLAGS=-DACTIVE
 

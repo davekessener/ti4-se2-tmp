@@ -1,5 +1,5 @@
 CC=g++
-CPPFLAGS=-Wall -std=c++03 -ggdb -I.
+CPPFLAGS=-Wall -std=c++03 -ggdb -I. $(FLAGS)
 LDFLAGS=-lpthread -lrt
 SRC=$(shell find -name "*.cc")
 OBJ=$(SRC:.cc=.o)
