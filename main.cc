@@ -32,7 +32,7 @@ class Connection
 	public:
 		Connection(const std::string& d)
 		{
-			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY)) < 0)
+			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY | O_NDELAY)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
 
 			if(fcntl(f_, F_SETFL, 0) < 0) throw std::string("fcntl");
@@ -78,7 +78,12 @@ class Connection
 			while(t < n)
 			{
 				if((r = write(f_, p + t, n - t)) == -1)
-					throw std::string("failed send");
+				{
+					if(errno == EAGAIN || errno == EWOULDBLOCK)
+						continue;
+					else
+						throw std::string("failed send");
+				}
 
 				for(int i = 0 ; i < r ; ++i)
 				{
@@ -104,7 +109,12 @@ class Connection
 			while(t < n)
 			{
 				if((r = read(f_, p + t, n - t)) == -1)
-					throw std::string("failed recv");
+				{
+					if(errno == EAGAIN || errno == EWOULDBLOCK)
+						continue;
+					else
+						throw std::string("failed send");
+				}
 
 				for(int i = 0 ; i < r ; ++i)
 				{
