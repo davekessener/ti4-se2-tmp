@@ -14,9 +14,7 @@ class Connection
 	public:
 		Connection(const std::string& d)
 		{
-			int f_ = open(d.c_str(), O_RDWR);
-
-			if(f_ < 0)
+			if((f_ = open(d.c_str(), O_RDWR)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
 
 			struct termios ts;
@@ -90,6 +88,7 @@ class Connection
 
 			return s;
 		}
+
 	private:
 		int f_;
 };
