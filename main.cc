@@ -152,10 +152,18 @@ int main(int argc, char *argv[])
 	try
 	{
 		Connection c("/dev/ttyS0");
+		static const uint64_t tt = 0x123456789abcdef0L;
 
 		if(active)
 		{
+			c.send(&tt, sizeof(tt));
 			c.sendS("Hello, World!");
+		}
+		else
+		{
+			uint64_t rt;
+			c.recv(&rt, sizeof(rt));
+			log->MXT_LOG("MAGIC: 0x%016lx", rt);
 		}
 
 		std::string s = c.recvS();
