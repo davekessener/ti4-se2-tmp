@@ -76,7 +76,7 @@ class Connection
 		Connection(const std::string& d, bool a)
 		: device_(d), active_(a), running_(false)
 		{
-			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY | O_NDELAY)) < 0)
+			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
 
 			if(fcntl(f_, F_SETFL, 0) < 0) throw std::string("fcntl");
