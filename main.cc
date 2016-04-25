@@ -18,6 +18,19 @@ class Connection
 
 			if(f_ < 0)
 				throw std::string("couldn't open device '" + d + "'!");
+
+			struct termios ts;
+			tcflush(f_, TCIOFLUSH);
+			tcgetattr(f_, &ts);
+			cfsetispeed(&ts, B19200);
+			cfsetospeed(&ts, B19200);
+			ts.c_cflag &= ~CSIZE;
+			ts.c_cflag &= ~CSTOPB;
+			ts.c_cflag &= ~PARENB;
+			ts.c_cflag |= CS8;
+			ts.c_cflag |= CREAD;
+			ts.c_cflag |= CLOCAL;
+			tcsetattr(f_, TCSANOW, &ts);
 		}
 
 		~Connection( )
