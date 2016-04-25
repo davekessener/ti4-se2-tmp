@@ -162,7 +162,7 @@ class Connection
 			{
 				r = nb_write(f_, p + t, n - t);
 
-				if(!running_) return;
+				checkRunning();
 
 				for(int i = 0 ; i < r ; ++i)
 				{
@@ -191,7 +191,9 @@ class Connection
 			{
 				r = nb_read(f_, p + t, n - t);
 
-				if(!running_ || (!r && !t)) return false;
+				checkRunning();
+
+				if(!r && !t) return false;
 
 				for(int i = 0 ; i < r ; ++i)
 				{
@@ -212,7 +214,7 @@ class Connection
 
 		void recv(void *pp, size_t n)
 		{
-			while(running_ && !try_recv(pp, n));
+			while(!try_recv(pp, n)) checkRunning();
 		}
 
 // # ---------------------------------------------------------------------------
@@ -229,6 +231,16 @@ class Connection
 			T t;
 			recv(&t, sizeof(t));
 			return t;
+		}
+
+// # ---------------------------------------------------------------------------
+
+		struct DoneRunning { };
+	
+		void checkRunning(void)
+		{
+			if(!running_)
+				throw DoneRunning();
 		}
 
 // # ---------------------------------------------------------------------------
@@ -263,9 +275,14 @@ class Connection
 					delay.wait();
 				}
 			}
+			catch(const DoneRunning& e)
+			{
+				getLog()->MXT_LOG("shutting down connection");
+			}
 			catch(const std::string& e)
 			{
 				getLog()->MXT_LOG("caught exception: \"%s\" [errno %i (%s)]", e.c_str(), errno, strerror(errno));
+				throw;
 			}
 		}
 
