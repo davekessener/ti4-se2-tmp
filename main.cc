@@ -9,6 +9,17 @@
 
 #include "lib/log/LogManager.h"
 
+using lib::log::Logger_ptr;
+using lib::log::LogManager;
+using lib::log::LogLevel;
+
+Logger_ptr getLog()
+{
+	static Logger_ptr log = LogManager::instance().rootLog();
+
+	return log;
+}
+
 class Connection
 {
 	public:
@@ -42,11 +53,15 @@ class Connection
 			int r = 0;
 			const char *p = (const char *) pp;
 
+			Logger_ptr log = getLog();
+
 			while(t < n)
 			{
 				if((r = write(f_, p + t, n - t)) == -1)
 					throw std::string("failed send");
 				t += r;
+
+				log->MXT_LOG("wrote %i bytes", r);
 			}
 		}
 
@@ -56,11 +71,15 @@ class Connection
 			int r = 0;
 			char *p = (char *) pp;
 
+			Logger_ptr log = getLog();
+
 			while(t < n)
 			{
 				if((r = read(f_, p + t, n - t)) == -1)
 					throw std::string("failed recv");
 				t += r;
+
+				log->MXT_LOG("read %i bytes", r);
 			}
 		}
 
@@ -70,6 +89,8 @@ class Connection
 
 			send(&l, sizeof(l));
 			send(s.c_str(), l);
+
+			getLog()->MXT_LOG("wrote string of size %u", (unsigned) l);
 		}
 
 		std::string recvS(void)
@@ -86,6 +107,8 @@ class Connection
 			s = buf;
 			delete[] buf;
 
+			getLog()->MXT_LOG("read string of size %u", (unsigned) l);
+
 			return s;
 		}
 
@@ -95,16 +118,13 @@ class Connection
 
 int main(int argc, char *argv[])
 {
-	using lib::log::Logger_ptr;
-	using lib::log::LogManager;
-	using lib::log::LogLevel;
-
-	Logger_ptr log = LogManager::instance().rootLog();
 #ifdef ACTIVE
 	static const bool active = true;
 #else
 	static const bool active = false;
 #endif
+
+	Logger_ptr log = getLog();
 
 	log->MXT_LOG("Starting serial test as %s", (active ? "ACTIVE" : "PASSIVE"));
 
