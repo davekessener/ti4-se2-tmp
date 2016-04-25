@@ -27,7 +27,7 @@ class Connection
 	public:
 		Connection(const std::string& d)
 		{
-			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY | O_NDELAY)) < 0)
+			if((f_ = open(d.c_str(), O_RDWR)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
 
 			struct termios ts;
@@ -155,6 +155,8 @@ int main(int argc, char *argv[])
 	{
 		Connection c("/dev/ttyS0");
 		static const uint64_t tt = 0x123456789abcdef0L;
+
+		Time::ms(50).wait();
 
 		if(active)
 		{
