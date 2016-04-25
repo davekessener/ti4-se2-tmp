@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 		Connection c("/dev/ttyS0");
 		static const uint64_t tt = 0x123456789abcdef0L;
 
-		Time::ms(50).wait();
+		Time::ms(500).wait();
 
 		if(active)
 		{
