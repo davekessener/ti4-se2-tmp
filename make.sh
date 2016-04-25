@@ -19,5 +19,5 @@ inst=`find . -name "*.cc"`
 for f in $inst ; do
 	comp $f
 done
-echo_exec "g++ `find . -name \"*.o\" | sed 's/^\.\///' | xargs echo` -o $target -lpthread"
+echo_exec "g++ `find . -name \"*.o\" | sed 's/^\.\///' | xargs echo` -o $target -lpthread -lrt"
 
