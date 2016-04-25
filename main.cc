@@ -168,38 +168,20 @@ int main(int argc, char *argv[])
 	try
 	{
 		Connection c("/dev/ttyS0");
-		static const uint64_t tt = 0x120d00789abcdef0L;
 
 		if(active)
 		{
-			c.send(&tt, sizeof(tt));
 			c.sendS("Hello, World!");
 		}
-		else
-		{
-			uint64_t rt = -1;
-			c.recv(&rt, sizeof(rt));
-			log->MXT_LOG("MAGIC: 0x%08x%08x", ((uint32_t *) &rt)[1], ((uint32_t *) &rt)[0]);
 
-			std::string s = c.recvS();
-			log->MXT_LOG("received \"%s\"", s.c_str());
+		std::string s = c.recvS();
+
+		if(!active)
+		{
+			c.sendS(s);
 		}
 
-		Time::ms(100).wait();
-
-//		if(active)
-//		{
-//			c.sendS("Hello, World!");
-//		}
-//
-//		std::string s = c.recvS();
-//
-//		if(!active)
-//		{
-//			c.sendS(s);
-//		}
-//
-//		log->MXT_LOG("recv string \"%s\"", s.c_str());
+		log->MXT_LOG("recv string \"%s\"", s.c_str());
 	}
 	catch(const std::string& e)
 	{
