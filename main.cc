@@ -55,6 +55,8 @@ class Connection
 
 			Logger_ptr log = getLog();
 
+			log->MXT_LOG("BEGIN writing %u bytes ...", n);
+
 			while(t < n)
 			{
 				if((r = write(f_, p + t, n - t)) == -1)
@@ -74,6 +76,8 @@ class Connection
 			char *p = (char *) pp;
 
 			Logger_ptr log = getLog();
+
+			log->MXT_LOG("BEGIN reading %u bytes ...", n);
 
 			while(t < n)
 			{
@@ -104,6 +108,7 @@ class Connection
 			std::string s;
 
 			recv(&l, sizeof(l));
+			getLog()->MXT_LOG("will read a string of size %u", (unsigned) l);
 			buf = new char[l + 1];
 			recv(buf, l);
 			buf[l] = '\0';
