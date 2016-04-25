@@ -124,6 +124,8 @@ class Connection
 
 			log_ = LogManager::instance().getLog(MXT_CONLOG);
 
+			log_->addParent(getLog());
+
 			thread_.reset(new Thread(lib::wrapInFtor(this, &Connection::run)));
 		}
 
