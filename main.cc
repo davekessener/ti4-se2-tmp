@@ -13,6 +13,8 @@
 //#define MXT_IOSPEED B19200
 #define MXT_IOSPEED B115200
 
+#define MXT_CONLOG "conlog"
+
 using lib::log::Logger_ptr;
 using lib::log::LogManager;
 using lib::log::LogLevel;
@@ -56,6 +58,8 @@ class Connection
 			ts.c_iflag &= ~(INLCR | ICRNL);
 
 			if(tcsetattr(f_, TCSANOW, &ts) < 0) throw std::string("tcsetattr");
+
+			log_ = LogManager::instance().getLog(MXT_CONLOG);
 		}
 
 		~Connection( )
@@ -69,9 +73,7 @@ class Connection
 			int r = 0;
 			const uint8_t *p = (const uint8_t *) pp;
 
-			Logger_ptr log = getLog();
-
-			log->MXT_LOG("BEGIN writing %u bytes ...", n);
+			log_->MXT_LOG("BEGIN writing %u bytes ...", n);
 
 			while(t < n)
 			{
@@ -80,15 +82,15 @@ class Connection
 
 				for(int i = 0 ; i < r ; ++i)
 				{
-					log->MXT_LOG("wrote 0x%02x", (unsigned)p[t+i]);
+					log_->MXT_LOG("wrote 0x%02x", (unsigned)p[t+i]);
 				}
 
 				t += r;
 
-				log->MXT_LOG("wrote %i bytes", r);
+				log_->MXT_LOG("wrote %i bytes", r);
 			}
 
-			log->MXT_LOG("TOTAL of %u bytes written", t);
+			log_->MXT_LOG("TOTAL of %u bytes written", t);
 		}
 
 		void recv(void *pp, size_t n)
@@ -97,9 +99,7 @@ class Connection
 			int r = 0;
 			uint8_t *p = (uint8_t *) pp;
 
-			Logger_ptr log = getLog();
-
-			log->MXT_LOG("BEGIN reading %u bytes ...", n);
+			log_->MXT_LOG("BEGIN reading %u bytes ...", n);
 
 			while(t < n)
 			{
@@ -108,15 +108,15 @@ class Connection
 
 				for(int i = 0 ; i < r ; ++i)
 				{
-					log->MXT_LOG("read 0x%02x", (unsigned)p[t+i]);
+					log_->MXT_LOG("read 0x%02x", (unsigned)p[t+i]);
 				}
 
 				t += r;
 
-				log->MXT_LOG("read %i bytes", r);
+				log_->MXT_LOG("read %i bytes", r);
 			}
 
-			log->MXT_LOG("TOTAL of %u bytes read", t);
+			log_->MXT_LOG("TOTAL of %u bytes read", t);
 		}
 
 		void sendS(const std::string& s)
@@ -126,7 +126,7 @@ class Connection
 			send(&l, sizeof(l));
 			send(s.c_str(), l);
 
-			getLog()->MXT_LOG("wrote string of size %u", (unsigned) l);
+			log_->MXT_LOG("wrote string of size %u", (unsigned) l);
 		}
 
 		std::string recvS(void)
@@ -136,7 +136,7 @@ class Connection
 			std::string s;
 
 			recv(&l, sizeof(l));
-			getLog()->MXT_LOG("will read a string of size %u", (unsigned) l);
+			log_->MXT_LOG("will read a string of size %u", (unsigned) l);
 			buf = new char[l + 1];
 			recv(buf, l);
 			buf[l] = '\0';
@@ -144,13 +144,14 @@ class Connection
 			s = buf;
 			delete[] buf;
 
-			getLog()->MXT_LOG("read string of size %u", (unsigned) l);
+			log_->MXT_LOG("read string of size %u", (unsigned) l);
 
 			return s;
 		}
 
 	private:
 		int f_;
+		Logger_ptr log_;
 };
 
 int main(int argc, char *argv[])
@@ -181,7 +182,7 @@ int main(int argc, char *argv[])
 			c.sendS(s);
 		}
 
-		log->MXT_LOG("recv string \"%s\"", s.c_str());
+		log->MXT_LOG("received string \"%s\"", s.c_str());
 	}
 	catch(const std::string& e)
 	{
