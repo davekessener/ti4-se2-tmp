@@ -1,4 +1,5 @@
 #include <string>
+#include <memory>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -9,17 +10,21 @@
 
 #include "lib/log/LogManager.h"
 #include "lib/TimeP.h"
+#include "lib/mpl/FtorWrapper.hpp"
+#include "lib/concurrent/Thread.h"
 
 // # ===========================================================================
 
 #define MXT_IOSPEED B19200
-
 #define MXT_CONLOG "conlog"
+#define ATOKEN 0x12345678
+#define OKTOKEN 0xf0e1d2c3
 
 using lib::log::Logger_ptr;
 using lib::log::LogManager;
 using lib::log::LogLevel;
 using lib::Time;
+using lib::Thread;
 
 Logger_ptr getLog()
 {
@@ -69,7 +74,7 @@ class Connection
 {
 	public:
 		Connection(const std::string& d, bool a)
-		: device_(d), active_(a)
+		: device_(d), active_(a), running_(false)
 		{
 			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY | O_NDELAY)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
@@ -99,13 +104,27 @@ class Connection
 			if(tcsetattr(f_, TCSANOW, &ts) < 0) throw std::string("tcsetattr");
 
 			log_ = LogManager::instance().getLog(MXT_CONLOG);
+
+			thread_.reset(new Thread(lib::wrapInFtor(this, &Connection::run)));
 		}
 
 // # ---------------------------------------------------------------------------
 
 		~Connection( )
 		{
-			close(f_);
+			close();
+		}
+
+		void close(void)
+		{
+			if(f_)
+			{
+				running_ = false;
+				thread_->join();
+				thread_.reset();
+				::close(f_);
+				f_ = 0;
+			}
 		}
 
 // # ---------------------------------------------------------------------------
@@ -121,6 +140,8 @@ class Connection
 			while(t < n)
 			{
 				r = nb_write(f_, p + t, n - t);
+
+				if(!running_) return;
 
 				for(int i = 0 ; i < r ; ++i)
 				{
@@ -149,7 +170,7 @@ class Connection
 			{
 				r = nb_read(f_, p + t, n - t);
 
-				if(!r && !t) return false;
+				if(!running_ || (!r && !t)) return false;
 
 				for(int i = 0 ; i < r ; ++i)
 				{
@@ -170,7 +191,7 @@ class Connection
 
 		void recv(void *pp, size_t n)
 		{
-			while(!try_recv(pp, n));
+			while(running_ && !try_recv(pp, n));
 		}
 
 // # ---------------------------------------------------------------------------
@@ -194,11 +215,10 @@ class Connection
 		void run(void)
 		{
 			Time delay = Time::ms(100);
-			int c = 10;
 
-#define ATOKEN 0x12345678
-#define OKTOKEN 0xf0e1d2c3
-			while(c > 0)
+			running_ = true;
+
+			while(running_)
 			{
 				if(active_)
 				{
@@ -217,7 +237,6 @@ class Connection
 
 				getLog()->MXT_LOG("switched, now %s", (active_ ? "ACTIVE" : "PASSIVE"));
 
-				--c;
 				delay.wait();
 			}
 		}
@@ -226,9 +245,10 @@ class Connection
 
 	private:
 		std::string device_;
-		bool active_;
+		bool active_, running_;
 		int f_;
 		Logger_ptr log_;
+		std::auto_ptr<Thread> thread_;
 };
 
 // # ===========================================================================
@@ -254,7 +274,9 @@ int main(int argc, char *argv[])
 	{
 		Connection c("/dev/ttyS0", active);
 
-		c.run();
+		Time::s(1).wait();
+
+		c.close();
 	}
 	catch(const std::string& e)
 	{
