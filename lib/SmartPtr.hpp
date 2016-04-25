@@ -15,7 +15,7 @@ namespace lib
 		public:
 			SmartPtr( ) : p_(NULL), i_(NULL) { }
 			explicit SmartPtr(T *p) : p_(p), i_(new int) { *i_ = 1; }
-			SmartPtr(const SmartPtr<T>& p) : p_(p.p_), i_(p.i_) { ++*i_; }
+			SmartPtr(const SmartPtr<T>& p) : p_(p.p_), i_(p.i_) { if(i_) ++*i_; }
 			~SmartPtr( ) { reset(); }
 			SmartPtr<T>& operator=(const SmartPtr<T>& p)
 				{ Lock guard(this); reset(); if((p_ = p.p_)) { i_ = p.i_; ++*i_; } return *this; }
