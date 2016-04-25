@@ -80,7 +80,7 @@ namespace test
 		log->MXT_LOG("enter serial test %s", (active ? "ACTIVE" : "PASSIVE"));
 
 		int f;
-		if((f = open(active ? "/dev/ser1" : "/dev/ser2", O_RDWR)) < 0)
+		if((f = open("/dev/ttyS0", O_RDWR)) < 0)
 			throw std::runtime_error("err establishing serial connection");
 
 		struct termios ts;
