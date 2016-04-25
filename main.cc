@@ -237,26 +237,33 @@ class Connection
 
 			running_ = true;
 
-			while(running_)
+			try
 			{
-				if(active_)
+				while(running_)
 				{
-					send<uint32_t>(ATOKEN);
-					uint32_t a = recv<uint32_t>();
-					if(a != OKTOKEN) throw std::string("invalid OK token");
-					active_ = false;
-				}
-				else
-				{
-					uint32_t a = recv<uint32_t>();
-					if(a != ATOKEN) throw std::string("invalid A token");
-					send<uint32_t>(OKTOKEN);
-					active_ = true;
-				}
+					if(active_)
+					{
+						send<uint32_t>(ATOKEN);
+						uint32_t a = recv<uint32_t>();
+						if(a != OKTOKEN) throw std::string("invalid OK token");
+						active_ = false;
+					}
+					else
+					{
+						uint32_t a = recv<uint32_t>();
+						if(a != ATOKEN) throw std::string("invalid A token");
+						send<uint32_t>(OKTOKEN);
+						active_ = true;
+					}
 
-				getLog()->MXT_LOG("switched, now %s", (active_ ? "ACTIVE" : "PASSIVE"));
+					getLog()->MXT_LOG("switched, now %s", (active_ ? "ACTIVE" : "PASSIVE"));
 
-				delay.wait();
+					delay.wait();
+				}
+			}
+			catch(const std::string& e)
+			{
+				getLog()->MXT_LOG("caught exception: \"%s\" [errno %i (%s)]", e.c_str(), errno, strerror(errno));
 			}
 		}
 
