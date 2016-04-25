@@ -51,7 +51,7 @@ class Connection
 		{
 			size_t t = 0;
 			int r = 0;
-			const char *p = (const char *) pp;
+			const uint8_t *p = (const uint8_t *) pp;
 
 			Logger_ptr log = getLog();
 
@@ -64,7 +64,7 @@ class Connection
 
 				for(int i = 0 ; i < r ; ++i)
 				{
-					log->MXT_LOG("wrote 0x%02x", (int)p[t+i]);
+					log->MXT_LOG("wrote 0x%02x", (unsigned)p[t+i]);
 				}
 
 				t += r;
@@ -79,7 +79,7 @@ class Connection
 		{
 			size_t t = 0;
 			int r = 0;
-			char *p = (char *) pp;
+			uint8_t *p = (uint8_t *) pp;
 
 			Logger_ptr log = getLog();
 
@@ -92,7 +92,7 @@ class Connection
 
 				for(int i = 0 ; i < r ; ++i)
 				{
-					log->MXT_LOG("read 0x%02x", (int)p[t+i]);
+					log->MXT_LOG("read 0x%02x", (unsigned)p[t+i]);
 				}
 
 				t += r;
@@ -152,28 +152,38 @@ int main(int argc, char *argv[])
 	try
 	{
 		Connection c("/dev/ttyS0");
-		static const uint64_t tt = 0x123456789abcdef0L;
 
 		if(active)
 		{
-			c.send(&tt, sizeof(tt));
 			c.sendS("Hello, World!");
 		}
 		else
 		{
-			uint64_t rt;
-			c.recv(&rt, sizeof(rt));
-			log->MXT_LOG("MAGIC: 0x%016lx", rt);
+			std::string s = c.recvS();
+			log->MXT_LOG("received \"%s\"", s.c_str());
 		}
-
-		std::string s = c.recvS();
-
-		if(!active)
-		{
-			c.sendS(s);
-		}
-
-		log->MXT_LOG("recv string \"%s\"", s.c_str());
+//		static const uint64_t tt = 0x123456789abcdef0L;
+//
+//		if(active)
+//		{
+//			c.send(&tt, sizeof(tt));
+//			c.sendS("Hello, World!");
+//		}
+//		else
+//		{
+//			uint64_t rt;
+//			c.recv(&rt, sizeof(rt));
+//			log->MXT_LOG("MAGIC: 0x%016lx", rt);
+//		}
+//
+//		std::string s = c.recvS();
+//
+//		if(!active)
+//		{
+//			c.sendS(s);
+//		}
+//
+//		log->MXT_LOG("recv string \"%s\"", s.c_str());
 	}
 	catch(const std::string& e)
 	{
