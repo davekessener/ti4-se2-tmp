@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 		if(active)
 		{
 			c.send(&tt, sizeof(tt));
-			c.sendS("Hello, World!");
+			c.sendS("Hello, World");
 		}
 		else
 		{
