@@ -10,6 +10,9 @@
 #include "lib/log/LogManager.h"
 #include "lib/TimeP.h"
 
+//#define MXT_IOSPEED B19200
+#define MXT_IOSPEED B115200
+
 using lib::log::Logger_ptr;
 using lib::log::LogManager;
 using lib::log::LogLevel;
@@ -27,20 +30,28 @@ class Connection
 	public:
 		Connection(const std::string& d)
 		{
-			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY | O_NDELAY)) < 0)
+			if((f_ = open(d.c_str(), O_RDWR)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
+
+			if(fcntl(f_, F_SETFL, 0) < 0) throw std::string("fcntl");
 
 			struct termios ts;
 			if(tcflush(f_, TCIOFLUSH) < 0) throw std::string("tcflush");
 			if(tcgetattr(f_, &ts) < 0) throw std::string("tcgetattr");
-			if(cfsetispeed(&ts, B19200) < 0) throw std::string("cfsetispeed");
-			if(cfsetospeed(&ts, B19200) < 0) throw std::string("cfsetospeed");
+			if(cfsetispeed(&ts, MXT_IOSPEED) < 0) throw std::string("cfsetispeed");
+			if(cfsetospeed(&ts, MXT_IOSPEED) < 0) throw std::string("cfsetospeed");
 			ts.c_cflag &= ~CSIZE;
 			ts.c_cflag &= ~CSTOPB;
 			ts.c_cflag &= ~PARENB;
 			ts.c_cflag |= CS8;
 			ts.c_cflag |= CREAD;
 			ts.c_cflag |= CLOCAL;
+
+			ts.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+			ts.c_iflag &= ~(IXON | IXOFF | IXANY);
+			ts.c_cflag &= ~CRTSCTS;
+			ts.c_oflag &= ~OPOST;
+
 			if(tcsetattr(f_, TCSANOW, &ts) < 0) throw std::string("tcsetattr");
 		}
 
