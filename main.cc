@@ -8,10 +8,12 @@
 #include <string.h>
 
 #include "lib/log/LogManager.h"
+#include "lib/TimeP.h"
 
 using lib::log::Logger_ptr;
 using lib::log::LogManager;
 using lib::log::LogLevel;
+using lib::Time;
 
 Logger_ptr getLog()
 {
@@ -162,6 +164,8 @@ int main(int argc, char *argv[])
 			std::string s = c.recvS();
 			log->MXT_LOG("received \"%s\"", s.c_str());
 		}
+
+		Time::ms(100).wait();
 //		static const uint64_t tt = 0x123456789abcdef0L;
 //
 //		if(active)
