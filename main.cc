@@ -215,6 +215,8 @@ class Connection
 					active_ = true;
 				}
 
+				getLog()->MXT_LOG("switched, now %s", (active_ ? "ACTIVE" : "PASSIVE"));
+
 				--c;
 				delay.wait();
 			}
