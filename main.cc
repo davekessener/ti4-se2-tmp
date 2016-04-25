@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 #include "lib/log/LogManager.h"
 #include "lib/TimeP.h"
@@ -39,14 +41,31 @@ namespace
 {
 	int nb_read(int f, void *pp, size_t n)
 	{
-		int r = read(f, pp, n);
+		fd_set rfds;
+		struct timeval tv;
 
-		if(r == -1)
+		FD_ZERO(&rfds);
+		FD_SET(f, &rfds);
+
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
+
+		int r = select(f + 1, &rfds, NULL, NULL, &tv);
+
+		if(r < 0)
+			throw std::string("failed to check for readability");
+
+		if(r > 0)
 		{
-			if(errno != EAGAIN && errno != EWOULDBLOCK)
-				throw std::string("failed read");
-			else
-				r = 0;
+			r = read(f, pp, n);
+
+			if(r == -1)
+			{
+				if(errno != EAGAIN && errno != EWOULDBLOCK)
+					throw std::string("failed read");
+				else
+					r = 0;
+			}
 		}
 
 		return r;
@@ -76,7 +95,7 @@ class Connection
 		Connection(const std::string& d, bool a)
 		: device_(d), active_(a), running_(false)
 		{
-			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK)) < 0)
+			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
 
 			if(fcntl(f_, F_SETFL, 0) < 0) throw std::string("fcntl");
