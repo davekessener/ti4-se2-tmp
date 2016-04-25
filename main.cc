@@ -10,6 +10,8 @@
 #include "lib/log/LogManager.h"
 #include "lib/TimeP.h"
 
+// # ===========================================================================
+
 #define MXT_IOSPEED B19200
 
 #define MXT_CONLOG "conlog"
@@ -25,6 +27,43 @@ Logger_ptr getLog()
 
 	return log;
 }
+
+// # ===========================================================================
+
+namespace
+{
+	int nb_read(int f, void *pp, size_t n)
+	{
+		int r = read(f, pp, n);
+
+		if(r == -1)
+		{
+			if(errno != EAGAIN && errno != EWOULDBLOCK)
+				throw std::string("failed read");
+			else
+				r = 0;
+		}
+
+		return r;
+	}
+
+	int nb_write(int f, const void *pp, size_t n)
+	{
+		int r = write(f, pp, n);
+
+		if(r == -1)
+		{
+			if(errno != EAGAIN && errno != EWOULDBLOCK)
+				throw std::string("failed write");
+			else
+				r = 0;
+		}
+
+		return r;
+	}
+}
+
+// # ===========================================================================
 
 class Connection
 {
@@ -76,13 +115,7 @@ class Connection
 
 			while(t < n)
 			{
-				if((r = write(f_, p + t, n - t)) == -1)
-				{
-					if(errno == EAGAIN || errno == EWOULDBLOCK)
-						continue;
-					else
-						throw std::string("failed send");
-				}
+				r = nb_write(f_, p + t, n - t);
 
 				for(int i = 0 ; i < r ; ++i)
 				{
@@ -107,13 +140,7 @@ class Connection
 
 			while(t < n)
 			{
-				if((r = read(f_, p + t, n - t)) == -1)
-				{
-					if(errno == EAGAIN || errno == EWOULDBLOCK)
-						continue;
-					else
-						throw std::string("failed send");
-				}
+				r = nb_read(f_, p + t, n - t);
 
 				for(int i = 0 ; i < r ; ++i)
 				{
