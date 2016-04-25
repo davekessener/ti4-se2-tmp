@@ -10,8 +10,7 @@
 #include "lib/log/LogManager.h"
 #include "lib/TimeP.h"
 
-//#define MXT_IOSPEED B19200
-#define MXT_IOSPEED B115200
+#define MXT_IOSPEED B19200
 
 #define MXT_CONLOG "conlog"
 
