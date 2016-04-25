@@ -68,7 +68,8 @@ namespace
 class Connection
 {
 	public:
-		Connection(const std::string& d)
+		Connection(const std::string& d, bool a)
+		: device_(d), active_(a)
 		{
 			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY | O_NDELAY)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
@@ -100,10 +101,14 @@ class Connection
 			log_ = LogManager::instance().getLog(MXT_CONLOG);
 		}
 
+// # ---------------------------------------------------------------------------
+
 		~Connection( )
 		{
 			close(f_);
 		}
+
+// # ---------------------------------------------------------------------------
 
 		void send(const void *pp, size_t n)
 		{
@@ -129,6 +134,8 @@ class Connection
 
 			log_->MXT_LOG("TOTAL of %u bytes written", t);
 		}
+
+// # ---------------------------------------------------------------------------
 
 		bool try_recv(void *pp, size_t n)
 		{
@@ -159,12 +166,65 @@ class Connection
 			return true;
 		}
 
+// # ---------------------------------------------------------------------------
+
 		void recv(void *pp, size_t n)
 		{
 			while(!try_recv(pp, n));
 		}
 
+// # ---------------------------------------------------------------------------
+	
+		template<typename T>
+		void send(const T& t)
+		{
+			send(&t, sizeof(t));
+		}
+
+		template<typename T>
+		T recv(void)
+		{
+			T t;
+			recv(&t, sizeof(t));
+			return t;
+		}
+
+// # ---------------------------------------------------------------------------
+		
+		void run(void)
+		{
+			Time delay = Time::ms(100);
+			int c = 10;
+
+#define ATOKEN 0x12345678
+#define OKTOKEN 0xf0e1d2c3
+			while(c > 0)
+			{
+				if(active_)
+				{
+					send<uint32_t>(ATOKEN);
+					uint32_t a = recv<uint32_t>();
+					if(a != OKTOKEN) throw std::string("invalid OK token");
+					active_ = false;
+				}
+				else
+				{
+					uint32_t a = recv<uint32_t>();
+					if(a != ATOKEN) throw std::string("invalid A token");
+					send<uint32_t>(OKTOKEN);
+					active_ = true;
+				}
+
+				--c;
+				delay.wait();
+			}
+		}
+
+// # ---------------------------------------------------------------------------
+
 	private:
+		std::string device_;
+		bool active_;
 		int f_;
 		Logger_ptr log_;
 };
@@ -190,21 +250,9 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		Connection c("/dev/ttyS0");
+		Connection c("/dev/ttyS0", active);
 
-		if(active)
-		{
-			sendS(c, "Hello, World!");
-		}
-
-		std::string s = recvS(c);
-
-		if(!active)
-		{
-			sendS(c, s);
-		}
-
-		log->MXT_LOG("received string \"%s\"", s.c_str());
+		c.run();
 	}
 	catch(const std::string& e)
 	{
