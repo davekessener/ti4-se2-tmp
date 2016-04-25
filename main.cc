@@ -30,7 +30,7 @@ class Connection
 	public:
 		Connection(const std::string& d)
 		{
-			if((f_ = open(d.c_str(), O_RDWR)) < 0)
+			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
 
 			if(fcntl(f_, F_SETFL, 0) < 0) throw std::string("fcntl");
@@ -165,9 +165,7 @@ int main(int argc, char *argv[])
 	try
 	{
 		Connection c("/dev/ttyS0");
-		static const uint64_t tt = 0x123456789abcdef0L;
-
-		Time::ms(500).wait();
+		static const uint64_t tt = 0x120d00789abcdef0L;
 
 		if(active)
 		{
@@ -178,7 +176,7 @@ int main(int argc, char *argv[])
 		{
 			uint64_t rt = -1;
 			c.recv(&rt, sizeof(rt));
-			log->MXT_LOG("MAGIC: 0x%08x%08x", ((uint32_t *) &rt)[0], ((uint32_t *) &rt)[1]);
+			log->MXT_LOG("MAGIC: 0x%08x%08x", ((uint32_t *) &rt)[1], ((uint32_t *) &rt)[0]);
 
 			std::string s = c.recvS();
 			log->MXT_LOG("received \"%s\"", s.c_str());
