@@ -32,6 +32,9 @@ using lib::Thread;
 using lib::Data_ptr;
 using lib::Data;
 
+using lib::log::LogManager;
+using lib::log::Logger_ptr;
+
 class Connection::Impl
 {
 	friend class Connection;
@@ -72,12 +75,10 @@ class Connection::Impl
 	int f_;
 	std::auto_ptr<Thread> thread_;
 	buf_t rBuf_, wBuf_;
+	Logger_ptr log_;
 };
 
 // # ===========================================================================
-
-using lib::log::LogManager;
-using lib::log::Logger_ptr;
 
 namespace
 {
@@ -143,14 +144,25 @@ void Connection::Impl::send(const void *pp, size_t n)
 	int r = 0;
 	const uint8_t *p = (const uint8_t *) pp;
 
+	log_->MXT_LOG("trying to write %u bytes", n);
+
 	while(t < n)
 	{
 		r = nb_write(f_, p + t, n - t);
+
+		log_->MXT_LOG("total %i bytes written", r);
+
+		for(int i = 0 ; i < r ; ++i)
+		{
+			log_->MXT_LOG("wrote 0x%02x", (unsigned) p[t+i]);
+		}
 
 		checkRunning();
 
 		t += r;
 	}
+
+	log_->MXT_LOG("done writing");
 }
 
 // # ---------------------------------------------------------------------------
@@ -161,9 +173,18 @@ bool Connection::Impl::try_recv(void *pp, size_t n)
 	int r = 0;
 	uint8_t *p = (uint8_t *) pp;
 
+	log_->MXT_LOG("trying to read %u bytes", n);
+
 	while(t < n)
 	{
 		r = nb_read(f_, p + t, n - t);
+
+		log_->MXT_LOG("total %i bytes read", r);
+
+		for(int i = 0 ; i < r ; ++i)
+		{
+			log_->MXT_LOG("read 0x%02x", p[t+i]);
+		}
 
 		checkRunning();
 
@@ -171,6 +192,8 @@ bool Connection::Impl::try_recv(void *pp, size_t n)
 
 		t += r;
 	}
+
+	log_->MXT_LOG("done reading");
 
 	return true;
 }
@@ -398,6 +421,8 @@ Connection::Connection(const std::string& d, bool a)
 	ts.c_iflag &= ~(INLCR | ICRNL);
 
 	if(tcsetattr(impl_->f_, TCSANOW, &ts) < 0) throw std::string("tcsetattr");
+
+	impl_->log_ = LogManager::instance().getLog("serial");
 
 	impl_->thread_.reset(new Thread(lib::wrapInFtor(impl_, &Connection::Impl::run)));
 }
