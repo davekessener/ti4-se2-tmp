@@ -315,7 +315,7 @@ class Connection
 
 				connected_ = true;
 
-				while(running_)
+				while(true)
 				{
 					if(active_)
 					{
@@ -334,6 +334,8 @@ class Connection
 					}
 
 					getLog()->MXT_LOG("switched, now %s", (active_ ? "ACTIVE" : "PASSIVE"));
+
+					checkRunning();
 
 					delay.wait();
 				}
