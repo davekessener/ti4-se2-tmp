@@ -289,6 +289,8 @@ class Connection
 					while(true)
 					{
 						send<uint32_t>(TOK_HSA);
+
+						delay.wait();
 						
 						if(try_recv(&r, sizeof(r)))
 						{
@@ -297,8 +299,6 @@ class Connection
 							else
 								throw std::string("failed hand shake");
 						}
-
-						delay.wait();
 					}
 				}
 				else
