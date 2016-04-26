@@ -19,8 +19,12 @@
 
 #define MXT_IOSPEED B19200
 #define MXT_CONLOG "conlog"
-#define ATOKEN 0x12345678
-#define OKTOKEN 0xf0e1d2c3
+
+#define TOK_A   0x8de29457
+#define TOK_OK  0x226442b8
+#define TOK_HSA 0x88e7d7c9
+#define TOK_HSB 0x2624d967
+#define TOK_Q   0x36773fe0
 
 using lib::log::Logger_ptr;
 using lib::log::LogManager;
@@ -93,7 +97,7 @@ class Connection
 {
 	public:
 		Connection(const std::string& d, bool a)
-		: device_(d), active_(a), running_(false)
+		: device_(d), active_(a), running_(false), connected_(false)
 		{
 			if((f_ = open(d.c_str(), O_RDWR | O_NOCTTY)) < 0)
 				throw std::string("couldn't open device '" + d + "'!");
@@ -147,6 +151,9 @@ class Connection
 				f_ = 0;
 			}
 		}
+
+		bool connected(void) const { return connected_; }
+		bool running(void) const { return running_; }
 
 // # ---------------------------------------------------------------------------
 
@@ -244,6 +251,22 @@ class Connection
 		}
 
 // # ---------------------------------------------------------------------------
+
+		void checkedSend(uint32_t tok)
+		{
+			send<uint32_t>(tok);
+			uint32_t a = recv<uint32_t>();
+			if(a != TOK_OK) throw std::string("invalid answer!");
+		}
+
+		uint32_t checkedRecv(void)
+		{
+			uint32_t a = recv<uint32_t>();
+			send<uint32_t>(TOK_OK);
+			return a;
+		}
+
+// # ---------------------------------------------------------------------------
 		
 		void run(void)
 		{
@@ -253,20 +276,48 @@ class Connection
 
 			try
 			{
+				if(active_)
+				{
+					uint32_t r = 0;
+
+					while(true)
+					{
+						send<uint32_t>(TOK_HSA);
+						
+						if(try_recv(&r, sizeof(r)))
+						{
+							if(r == TOK_HSB)
+								break;
+							else
+								throw std::string("failed hand shake");
+						}
+
+						delay.wait();
+					}
+				}
+				else
+				{
+					uint32_t r = recv<uint32_t>();
+
+					if(r != TOK_HSA)
+						throw std::string("failed hand shake");
+
+					send<uint32_t>(TOK_HSB);
+				}
+
+				connected_ = true;
+
 				while(running_)
 				{
 					if(active_)
 					{
-						send<uint32_t>(ATOKEN);
-						uint32_t a = recv<uint32_t>();
-						if(a != OKTOKEN) throw std::string("invalid OK token");
+						checkedSend(TOK_A);
 						active_ = false;
 					}
 					else
 					{
-						uint32_t a = recv<uint32_t>();
-						if(a != ATOKEN) throw std::string("invalid A token");
-						send<uint32_t>(OKTOKEN);
+						uint32_t a = checkedRecv();
+						if(a != TOK_A) throw std::string("invalid A token");
 						active_ = true;
 					}
 
@@ -284,13 +335,15 @@ class Connection
 				getLog()->MXT_LOG("caught exception: \"%s\" [errno %i (%s)]", e.c_str(), errno, strerror(errno));
 				throw;
 			}
+
+			connected_ = false;
 		}
 
 // # ---------------------------------------------------------------------------
 
 	private:
 		std::string device_;
-		bool active_, running_;
+		bool active_, running_, connected_;
 		int f_;
 		Logger_ptr log_;
 		std::auto_ptr<Thread> thread_;
@@ -318,6 +371,8 @@ int main(int argc, char *argv[])
 	try
 	{
 		Connection c("/dev/ttyS0", active);
+
+		while(!c.connected()) Time::ms(100).wait();
 
 		Time::s(1).wait();
 
