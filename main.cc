@@ -266,6 +266,12 @@ class Connection
 			return a;
 		}
 
+		void flush(void)
+		{
+			if(tcflush(f_, TCIOFLUSH) == -1)
+				throw std::string("failed flush");
+		}
+
 // # ---------------------------------------------------------------------------
 		
 		void run(void)
@@ -303,6 +309,8 @@ class Connection
 						throw std::string("failed hand shake");
 
 					send<uint32_t>(TOK_HSB);
+
+					flush();
 				}
 
 				connected_ = true;
@@ -317,7 +325,11 @@ class Connection
 					else
 					{
 						uint32_t a = checkedRecv();
-						if(a != TOK_A) throw std::string("invalid A token");
+						if(a != TOK_A)
+						{
+							getLog()->MXT_LOGL(LogLevel::ERROR, "invalid A token [0x%08x instead of 0x%08x]", a, TOK_A);
+							throw std::string("invalid A token");
+						}
 						active_ = true;
 					}
 
