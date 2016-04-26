@@ -97,7 +97,7 @@ namespace
 		FD_SET(f, &rfds);
 
 		tv.tv_sec = 0;
-		tv.tv_usec = 10;
+		tv.tv_usec = 100;
 
 		int r = select(f + 1, &rfds, NULL, NULL, &tv);
 
