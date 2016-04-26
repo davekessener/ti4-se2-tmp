@@ -367,7 +367,7 @@ class Connection
 			checkedSend(Packet(TOK_A));
 		}
 
-		void receiveData(void)
+		void recvData(void)
 		{
 			while(true)
 			{
@@ -387,7 +387,7 @@ class Connection
 			wBuf_.enqueue(p);
 		}
 
-		Data_ptr receiveData(Data_ptr p)
+		Data_ptr receiveData(void)
 		{
 			return rBuf_.dequeue();
 		}
@@ -421,7 +421,7 @@ class Connection
 					}
 					else
 					{
-						receiveData();
+						recvData();
 						active_ = true;
 					}
 
@@ -458,11 +458,6 @@ class Connection
 
 // # ===========================================================================
 
-void sendS(Connection&, const std::string&);
-std::string recvS(Connection&);
-
-// # ===========================================================================
-
 int main(int argc, char *argv[])
 {
 #ifdef ACTIVE
@@ -478,10 +473,15 @@ int main(int argc, char *argv[])
 	try
 	{
 		Connection c("/dev/ttyS0", active);
+		std::string msg("Hello, World!");
 
 		while(!c.connected()) Time::ms(100).wait();
 
-		Time::s(1).wait();
+		if(active) c.sendData(Data::get(msg.c_str(), msg.length() + 1));
+		Data_ptr p = c.receiveData();
+		if(!active) c.sendData(p);
+
+		log->MXT_LOG("received string \"%s\"", (const char *) p->data());
 
 		c.close();
 	}
@@ -491,32 +491,5 @@ int main(int argc, char *argv[])
 	}
 
 	return 0;
-}
-
-// # ===========================================================================
-
-void sendS(Connection& c, const std::string& s)
-{
-	uint16_t l = s.length();
-
-	c.send(&l, sizeof(l));
-	c.send(s.c_str(), l);
-}
-
-std::string recvS(Connection& c)
-{
-	uint16_t l;
-	char *buf;
-	std::string s;
-
-	c.recv(&l, sizeof(l));
-	buf = new char[l + 1];
-	c.recv(buf, l);
-	buf[l] = '\0';
-
-	s = buf;
-	delete[] buf;
-
-	return s;
 }
 
