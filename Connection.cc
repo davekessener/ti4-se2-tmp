@@ -193,7 +193,7 @@ bool Connection::Impl::try_recv(void *pp, size_t n)
 		t += r;
 	}
 
-//	log_->MXT_LOG("done reading");
+	log_->MXT_LOG("done reading");
 
 	return true;
 }
