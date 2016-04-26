@@ -150,19 +150,19 @@ void Connection::Impl::send(const void *pp, size_t n)
 	{
 		r = nb_write(f_, p + t, n - t);
 
-		log_->MXT_LOG("total %i bytes written", r);
-
-		for(int i = 0 ; i < r ; ++i)
-		{
-			log_->MXT_LOG("wrote 0x%02x", (unsigned) p[t+i]);
-		}
+//		log_->MXT_LOG("total %i bytes written", r);
+//
+//		for(int i = 0 ; i < r ; ++i)
+//		{
+//			log_->MXT_LOG("wrote 0x%02x", (unsigned) p[t+i]);
+//		}
 
 		checkRunning();
 
 		t += r;
 	}
 
-	log_->MXT_LOG("done writing");
+//	log_->MXT_LOG("done writing");
 }
 
 // # ---------------------------------------------------------------------------
@@ -179,12 +179,12 @@ bool Connection::Impl::try_recv(void *pp, size_t n)
 	{
 		r = nb_read(f_, p + t, n - t);
 
-		log_->MXT_LOG("total %i bytes read", r);
-
-		for(int i = 0 ; i < r ; ++i)
-		{
-			log_->MXT_LOG("read 0x%02x", p[t+i]);
-		}
+//		log_->MXT_LOG("total %i bytes read", r);
+//
+//		for(int i = 0 ; i < r ; ++i)
+//		{
+//			log_->MXT_LOG("read 0x%02x", p[t+i]);
+//		}
 
 		checkRunning();
 
@@ -193,7 +193,7 @@ bool Connection::Impl::try_recv(void *pp, size_t n)
 		t += r;
 	}
 
-	log_->MXT_LOG("done reading");
+//	log_->MXT_LOG("done reading");
 
 	return true;
 }
