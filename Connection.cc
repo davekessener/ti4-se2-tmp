@@ -144,25 +144,25 @@ void Connection::Impl::send(const void *pp, size_t n)
 	int r = 0;
 	const uint8_t *p = (const uint8_t *) pp;
 
-//	log_->MXT_LOG("trying to write %u bytes", n);
+	log_->MXT_LOG("trying to write %u bytes", n);
 
 	while(t < n)
 	{
 		r = nb_write(f_, p + t, n - t);
 
-//		log_->MXT_LOG("total %i bytes written", r);
-//
-//		for(int i = 0 ; i < r ; ++i)
-//		{
-//			log_->MXT_LOG("wrote 0x%02x", (unsigned) p[t+i]);
-//		}
+		log_->MXT_LOG("total %i bytes written", r);
+
+		for(int i = 0 ; i < r ; ++i)
+		{
+			log_->MXT_LOG("wrote 0x%02x", (unsigned) p[t+i]);
+		}
 
 		checkRunning();
 
 		t += r;
 	}
 
-//	log_->MXT_LOG("done writing");
+	log_->MXT_LOG("done writing");
 }
 
 // # ---------------------------------------------------------------------------
