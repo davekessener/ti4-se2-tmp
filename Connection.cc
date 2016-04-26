@@ -423,6 +423,7 @@ Connection::Connection(const std::string& d, bool a)
 	if(tcsetattr(impl_->f_, TCSANOW, &ts) < 0) throw std::string("tcsetattr");
 
 	impl_->log_ = LogManager::instance().getLog("serial");
+	impl_->log_->addParent(getLog());
 
 	impl_->thread_.reset(new Thread(lib::wrapInFtor(impl_, &Connection::Impl::run)));
 }
