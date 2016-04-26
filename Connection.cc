@@ -173,19 +173,18 @@ bool Connection::Impl::try_recv(void *pp, size_t n)
 	int r = 0;
 	uint8_t *p = (uint8_t *) pp;
 
-//	log_->MXT_LOG("trying to read %u bytes", n);
-	Time::us(10000).wait();
+	log_->MXT_LOG("trying to read %u bytes", n);
 
 	while(t < n)
 	{
 		r = nb_read(f_, p + t, n - t);
 
-//		log_->MXT_LOG("total %i bytes read", r);
-//
-//		for(int i = 0 ; i < r ; ++i)
-//		{
-//			log_->MXT_LOG("read 0x%02x", p[t+i]);
-//		}
+		log_->MXT_LOG("total %i bytes read", r);
+
+		for(int i = 0 ; i < r ; ++i)
+		{
+			log_->MXT_LOG("read 0x%02x", p[t+i]);
+		}
 
 		checkRunning();
 
@@ -194,8 +193,7 @@ bool Connection::Impl::try_recv(void *pp, size_t n)
 		t += r;
 	}
 
-//	log_->MXT_LOG("done reading");
-	Time::us(10000).wait();
+	log_->MXT_LOG("done reading");
 
 	return true;
 }
