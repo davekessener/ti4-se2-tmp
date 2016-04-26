@@ -144,7 +144,7 @@ void Connection::Impl::send(const void *pp, size_t n)
 	int r = 0;
 	const uint8_t *p = (const uint8_t *) pp;
 
-	log_->MXT_LOG("trying to write %u bytes", n);
+//	log_->MXT_LOG("trying to write %u bytes", n);
 
 	while(t < n)
 	{
@@ -173,7 +173,7 @@ bool Connection::Impl::try_recv(void *pp, size_t n)
 	int r = 0;
 	uint8_t *p = (uint8_t *) pp;
 
-	log_->MXT_LOG("trying to read %u bytes", n);
+//	log_->MXT_LOG("trying to read %u bytes", n);
 
 	while(t < n)
 	{
