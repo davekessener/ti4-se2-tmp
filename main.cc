@@ -272,46 +272,65 @@ class Connection
 				throw std::string("failed flush");
 		}
 
+		void giveHandshake(void)
+		{
+			uint32_t r = 0;
+
+			while(true)
+			{
+				send<uint32_t>(TOK_HSA);
+
+				Time::ms(100).wait();
+				
+				if(try_recv(&r, sizeof(r)))
+				{
+					if(r == TOK_HSB)
+						break;
+					else
+						throw std::string("failed hand shake");
+				}
+			}
+		}
+
+		void receiveHandshake(void)
+		{
+			uint32_t r = recv<uint32_t>();
+
+			if(r != TOK_HSA)
+				throw std::string("failed hand shake");
+
+			send<uint32_t>(TOK_HSB);
+
+			flush();
+		}
+
+		void sendData(void)
+		{
+			checkedSend(TOK_A);
+		}
+
+		void receiveData(void)
+		{
+			uint32_t a = checkedRecv();
+			if(a != TOK_A)
+			{
+				getLog()->MXT_LOGL(LogLevel::ERROR, "invalid A token [0x%08x instead of 0x%08x]", a, TOK_A);
+				throw std::string("invalid A token");
+			}
+		}
+
 // # ---------------------------------------------------------------------------
 		
 		void run(void)
 		{
-			Time delay = Time::ms(100);
-
 			running_ = true;
 
 			try
 			{
 				if(active_)
-				{
-					uint32_t r = 0;
-
-					while(true)
-					{
-						send<uint32_t>(TOK_HSA);
-
-						delay.wait();
-						
-						if(try_recv(&r, sizeof(r)))
-						{
-							if(r == TOK_HSB)
-								break;
-							else
-								throw std::string("failed hand shake");
-						}
-					}
-				}
+					giveHandshake();
 				else
-				{
-					uint32_t r = recv<uint32_t>();
-
-					if(r != TOK_HSA)
-						throw std::string("failed hand shake");
-
-					send<uint32_t>(TOK_HSB);
-
-					flush();
-				}
+					receiveHandshake();
 
 				connected_ = true;
 
@@ -319,17 +338,12 @@ class Connection
 				{
 					if(active_)
 					{
-						checkedSend(TOK_A);
+						sendData();
 						active_ = false;
 					}
 					else
 					{
-						uint32_t a = checkedRecv();
-						if(a != TOK_A)
-						{
-							getLog()->MXT_LOGL(LogLevel::ERROR, "invalid A token [0x%08x instead of 0x%08x]", a, TOK_A);
-							throw std::string("invalid A token");
-						}
+						receiveData();
 						active_ = true;
 					}
 
@@ -337,7 +351,7 @@ class Connection
 
 					checkRunning();
 
-					delay.wait();
+					Time::ms(100).wait();
 				}
 			}
 			catch(const DoneRunning& e)
