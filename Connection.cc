@@ -14,6 +14,7 @@
 #include "lib/concurrent/Thread.h"
 #include "lib/RingBuffer.hpp"
 #include "lib/mpl/FtorWrapper.hpp"
+#include "lib/log/LogManager.h"
 
 #define MXT_PACKETBUFSIZE 256
 #define MXT_IOSPEED B19200
@@ -75,8 +76,17 @@ class Connection::Impl
 
 // # ===========================================================================
 
+using lib::log::LogManager;
+using lib::log::Logger_ptr;
+
 namespace
 {
+	Logger_ptr getLog()
+	{
+		static Logger_ptr l = LogManager::instance().rootLog();
+		return l;
+	}
+
 	int nb_read(int f, void *pp, size_t n)
 	{
 		fd_set rfds;
@@ -342,11 +352,11 @@ void Connection::Impl::run(void)
 	}
 	catch(const DoneRunning& e)
 	{
-//		getLog()->MXT_LOG("shutting down connection");
+		getLog()->MXT_LOG("shutting down connection");
 	}
 	catch(const std::string& e)
 	{
-//		getLog()->MXT_LOG("caught exception: \"%s\" [errno %i (%s)]", e.c_str(), errno, strerror(errno));
+		getLog()->MXT_LOG("caught exception: \"%s\" [errno %i (%s)]", e.c_str(), errno, strerror(errno));
 		throw;
 	}
 
