@@ -97,7 +97,7 @@ namespace
 		FD_SET(f, &rfds);
 
 		tv.tv_sec = 0;
-		tv.tv_usec = 100;
+		tv.tv_usec = 0;
 
 		int r = select(f + 1, &rfds, NULL, NULL, &tv);
 
@@ -179,12 +179,12 @@ bool Connection::Impl::try_recv(void *pp, size_t n)
 	{
 		r = nb_read(f_, p + t, n - t);
 
-//		log_->MXT_LOG("total %i bytes read", r);
-//
-//		for(int i = 0 ; i < r ; ++i)
-//		{
-//			log_->MXT_LOG("read 0x%02x", p[t+i]);
-//		}
+		log_->MXT_LOG("total %i bytes read", r);
+
+		for(int i = 0 ; i < r ; ++i)
+		{
+			log_->MXT_LOG("read 0x%02x", p[t+i]);
+		}
 
 		checkRunning();
 
