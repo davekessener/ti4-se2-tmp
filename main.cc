@@ -162,6 +162,7 @@ class Connection
 
 		bool connected(void) const { return connected_; }
 		bool running(void) const { return running_; }
+		bool doneWriting(void) const { return wBuf_.empty(); }
 
 // # ---------------------------------------------------------------------------
 
@@ -363,6 +364,7 @@ class Connection
 			while(!wBuf_.empty())
 			{
 				checkedSend(Packet(TOK_DAT, wBuf_.dequeue()));
+				getLog()->MXT_LOG("send data packet");
 			}
 			checkedSend(Packet(TOK_A));
 		}
@@ -375,6 +377,8 @@ class Connection
 
 				if(a.tag == TOK_A)
 					break;
+
+				getLog()->MXT_LOG("received data packet");
 
 				rBuf_.enqueue(a.data);
 			}
@@ -482,6 +486,8 @@ int main(int argc, char *argv[])
 		if(!active) c.sendData(p);
 
 		log->MXT_LOG("received string \"%s\"", (const char *) p->data());
+
+		while(!c.doneWriting()) Time::ms(100).wait();
 
 		c.close();
 	}
