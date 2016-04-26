@@ -14,6 +14,8 @@
 #include "lib/TimeP.h"
 #include "lib/mpl/FtorWrapper.hpp"
 #include "lib/concurrent/Thread.h"
+#include "lib/RingBuffer.hpp"
+#include "lib/Data.h"
 
 // # ===========================================================================
 
@@ -24,13 +26,15 @@
 #define TOK_OK  0x226442b8
 #define TOK_HSA 0x88e7d7c9
 #define TOK_HSB 0x2624d967
-#define TOK_Q   0x36773fe0
+#define TOK_DAT 0x36773fe0
 
 using lib::log::Logger_ptr;
 using lib::log::LogManager;
 using lib::log::LogLevel;
 using lib::Time;
 using lib::Thread;
+using lib::Data_ptr;
+using lib::Data;
 
 Logger_ptr getLog()
 {
@@ -93,8 +97,12 @@ namespace
 
 // # ===========================================================================
 
+#define MXT_PACKETBUFSIZE 256
+
 class Connection
 {
+	typedef lib::RingBuffer<Data_ptr, MXT_PACKETBUFSIZE, lib::RingBufferConcurrency::MultiThreaded> buf_t;
+
 	public:
 		Connection(const std::string& d, bool a)
 		: device_(d), active_(a), running_(false), connected_(false)
@@ -252,25 +260,66 @@ class Connection
 
 // # ---------------------------------------------------------------------------
 
-		void checkedSend(uint32_t tok)
+		struct Packet
 		{
-			send<uint32_t>(tok);
-			uint32_t a = recv<uint32_t>();
-			if(a != TOK_OK) throw std::string("invalid answer!");
+			explicit Packet(uint32_t t) : tag(t) { }
+			Packet(uint32_t t, Data_ptr p) : tag(t), data(p) { }
+
+			uint32_t tag;
+			Data_ptr data;
+		};
+
+		void sendPacket(const Packet& p)
+		{
+			send<uint32_t>(p.tag);
+			if(static_cast<bool>(p.data) && p.data->size() > 0)
+			{
+				send<uint32_t>(p.data->size());
+				send(p.data->data(), p.data->size());
+			}
+			else
+			{
+				send<uint32_t>(0);
+			}
 		}
 
-		uint32_t checkedRecv(void)
+		Packet receivePacket(void)
 		{
-			uint32_t a = recv<uint32_t>();
-			send<uint32_t>(TOK_OK);
-			return a;
+			Packet p(recv<uint32_t>());
+			uint32_t size = recv<uint32_t>();
+
+			if(size > 0)
+			{
+				p.data = Data::empty(size);
+				recv(p.data->data(), size);
+			}
+
+			return p;
 		}
+
+		void checkedSend(const Packet& p)
+		{
+			sendPacket(p);
+			Packet a = receivePacket();
+			if(a.tag != TOK_OK) throw std::string("invalid answer!");
+		}
+
+		Packet checkedRecv(void)
+		{
+			Packet p = receivePacket();
+			sendPacket(Packet(TOK_OK));
+			return p;
+		}
+
+// # ---------------------------------------------------------------------------
 
 		void flush(void)
 		{
 			if(tcflush(f_, TCIOFLUSH) == -1)
 				throw std::string("failed flush");
 		}
+
+// # ---------------------------------------------------------------------------
 
 		void giveHandshake(void)
 		{
@@ -304,19 +353,45 @@ class Connection
 			flush();
 		}
 
+// # ---------------------------------------------------------------------------
+
 		void sendData(void)
 		{
-			checkedSend(TOK_A);
+			while(!wBuf_.empty())
+			{
+				checkedSend(Packet(TOK_DAT, wBuf_.dequeue()));
+			}
+			checkedSend(Packet(TOK_A));
 		}
 
 		void receiveData(void)
 		{
-			uint32_t a = checkedRecv();
-			if(a != TOK_A)
+			while(true)
 			{
-				getLog()->MXT_LOGL(LogLevel::ERROR, "invalid A token [0x%08x instead of 0x%08x]", a, TOK_A);
-				throw std::string("invalid A token");
+				Packet a = checkedRecv();
+
+				if(a.tag == TOK_A)
+					break;
+
+				rBuf_.enqueue(a.data);
 			}
+		}
+
+// # ---------------------------------------------------------------------------
+		
+		void sendData(Data_ptr p)
+		{
+			wBuf_.enqueue(p);
+		}
+
+		Data_ptr receiveData(Data_ptr p)
+		{
+			return rBuf_.dequeue();
+		}
+
+		bool hasData(void) const
+		{
+			return !rBuf_.empty();
 		}
 
 // # ---------------------------------------------------------------------------
@@ -375,6 +450,7 @@ class Connection
 		int f_;
 		Logger_ptr log_;
 		std::auto_ptr<Thread> thread_;
+		buf_t rBuf_, wBuf_;
 };
 
 // # ===========================================================================

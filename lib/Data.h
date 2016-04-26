@@ -12,10 +12,13 @@ namespace lib
 		public:
 			typedef lib::SmartPtr<Data> Data_ptr;
 
+			~Data( ) { delete[] static_cast<uint8_t *>(data_); }
+
 			static Data_ptr get(const void *, size_t);
 			static Data_ptr move(void *d, size_t s) { return Data_ptr(new Data(d, s)); }
 			template<typename T>
 				static Data_ptr get(const T& t) { return get(&t, sizeof(t)); }
+			static Data_ptr empty(size_t s) { return move(new uint8_t[s], s); }
 
 			void *data( ) { return data_; }
 			const void *data( ) const { return data_; }
