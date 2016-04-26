@@ -346,7 +346,10 @@ class Connection
 			uint32_t r = recv<uint32_t>();
 
 			if(r != TOK_HSA)
+			{
+				getLog()->MXT_LOGL(LogLevel::ERROR, "failed hand shake: 0x%08x", r);
 				throw std::string("failed hand shake");
+			}
 
 			send<uint32_t>(TOK_HSB);
 
